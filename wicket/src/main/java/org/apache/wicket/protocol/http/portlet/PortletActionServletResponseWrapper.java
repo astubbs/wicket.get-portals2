@@ -26,6 +26,11 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
 /**
+ * Portlet Action specific response wrapper.
+ * 
+ * FIXME comment no-ops
+ * 
+ * @see PortletServletResponseWrapper
  * @author Ate Douma
  */
 public class PortletActionServletResponseWrapper extends PortletServletResponseWrapper
@@ -37,7 +42,7 @@ public class PortletActionServletResponseWrapper extends PortletServletResponseW
 		ActionResponse actionResponse, WicketResponseState responseState)
 	{
 		super(response, responseState);
-		this.actionResponse = actionResponse;  
+		this.actionResponse = actionResponse;
 	}
 
 	@Override

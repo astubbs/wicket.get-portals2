@@ -19,6 +19,11 @@ package org.apache.wicket.protocol.http.portlet;
 import javax.portlet.RenderResponse;
 import javax.servlet.http.HttpServletResponse;
 
+/**
+ * Identifies render portlet responses.
+ * 
+ * @author Ate Douma
+ */
 public class PortletRenderServletResponseWrapper extends PortletMimeServletResponseWrapper
 {
 	public PortletRenderServletResponseWrapper(HttpServletResponse response,
@@ -26,5 +31,4 @@ public class PortletRenderServletResponseWrapper extends PortletMimeServletRespo
 	{
 		super(response, renderResponse, responseState);
 	}
-
 }

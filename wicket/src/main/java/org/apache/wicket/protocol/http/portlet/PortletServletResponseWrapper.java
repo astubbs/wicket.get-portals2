@@ -22,6 +22,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 /**
+ * General class for all Portal responses, wrapping Servlet responses with Portal specific
+ * functionality.
+ * 
+ * @see PortletMimeServletResponseWrapper
  * @author Ate Douma
  */
 public class PortletServletResponseWrapper extends HttpServletResponseWrapper

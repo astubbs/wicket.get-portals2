@@ -24,6 +24,10 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpSession;
 
 /**
+ * Wraps servlet request object with Portal specific functionality.
+ * 
+ * FIXME javadoc
+ * 
  * @author Ate Douma
  */
 public class PortletServletRequestWrapper extends HttpServletRequestWrapper
@@ -35,6 +39,13 @@ public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 	private String queryString;
 	private HttpSession session;
 
+	/**
+	 * FIXME javadoc
+	 * 
+	 * @param request
+	 * @param filterPath
+	 * @return
+	 */
 	private static String decodePathInfo(HttpServletRequest request, String filterPath)
 	{
 		String pathInfo = request.getRequestURI().substring(
@@ -42,11 +53,25 @@ public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 		return pathInfo == null || pathInfo.length() < 2 ? null : pathInfo;
 	}
 
+	/**
+	 * FIXME javadoc
+	 * 
+	 * @param filterPath
+	 * @return
+	 */
 	private static String makeServletPath(String filterPath)
 	{
 		return "/" + filterPath.substring(0, filterPath.length() - 1);
 	}
 
+	/**
+	 * FIXME javadoc
+	 * 
+	 * @param context
+	 * @param proxiedSession
+	 * @param request
+	 * @param filterPath
+	 */
 	protected PortletServletRequestWrapper(ServletContext context, HttpSession proxiedSession,
 		HttpServletRequest request, String filterPath)
 	{
@@ -57,16 +82,20 @@ public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 			session = request.getSession(false);
 		}
 		servletPath = makeServletPath(filterPath);
+		// retrieve the correct contextPath, requestURI and queryString
+		// if request request is an include
 		if ((contextPath = (String)request.getAttribute("javax.servlet.include.context_path")) != null)
 		{
 			requestURI = (String)request.getAttribute("javax.servlet.include.request_uri");
 			queryString = (String)request.getAttribute("javax.servlet.include.query_string");
 		}
+		// else if request is a forward
 		else if ((contextPath = (String)request.getAttribute("javax.servlet.forward.context_path")) != null)
 		{
 			requestURI = (String)request.getAttribute("javax.servlet.forward.request_uri");
 			queryString = (String)request.getAttribute("javax.servlet.forward.query_string");
 		}
+		// else it is a normal request
 		else
 		{
 			contextPath = request.getContextPath();
@@ -75,6 +104,14 @@ public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 		}
 	}
 
+	/**
+	 * FIXME javadoc
+	 * 
+	 * @param context
+	 * @param request
+	 * @param proxiedSession
+	 * @param filterPath
+	 */
 	public PortletServletRequestWrapper(ServletContext context, HttpServletRequest request,
 		HttpSession proxiedSession, String filterPath)
 	{
@@ -84,6 +121,15 @@ public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 		this.pathInfo = pathInfo == null || pathInfo.length() < 2 ? null : pathInfo;
 	}
 
+	/**
+	 * FIXME javadoc
+	 * 
+	 * @param context
+	 * @param request
+	 * @param proxiedSession
+	 * @param filterPath
+	 * @param pathInfo
+	 */
 	public PortletServletRequestWrapper(ServletContext context, HttpServletRequest request,
 		HttpSession proxiedSession, String filterPath, String pathInfo)
 	{
@@ -135,7 +181,6 @@ public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 	{
 		return session != null ? session : super.getSession(create);
 	}
-
 
 	@Override
 	public void setCharacterEncoding(String enc) throws UnsupportedEncodingException

@@ -36,6 +36,8 @@ import org.apache.wicket.protocol.http.WebResponse;
 import org.apache.wicket.protocol.http.servlet.ServletWebRequest;
 
 /**
+ * FIXME javadoc
+ * 
  * @author Ate Douma
  */
 public class PortletRequestContext extends RequestContext

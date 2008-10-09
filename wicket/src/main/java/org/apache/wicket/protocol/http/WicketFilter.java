@@ -59,6 +59,18 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Filter for initiating handling of Wicket requests.
+ * <p/>
+ * 
+ * From the Wicket Wiki: <br/>
+ * 
+ * "For 1.3 and onward, what we do is instead of using a servlet, use a filter.
+ * <p/>
+ * 
+ * The advantage of a filter is that, unlike a servlet, it can choose not to process the request and
+ * let whatever is next in chain try. So when using a Wicket filter and a request comes in for
+ * foo.gif the filter can choose not to process it because it knows it is not a wicket-related
+ * request. Since the filter didn't process it, it falls on to the application server to try, and
+ * then it works."
  * 
  * @see WicketServlet for documentation
  * 
@@ -139,13 +151,13 @@ public class WicketFilter implements Filter
 	 */
 	private static final String WICKET_PORTLET_PROPERTIES = "org/apache/wicket/protocol/http/portlet/WicketPortlet.properties";
 
-	/*
+	/**
 	 * Delegate for handling Portlet specific filtering. Not instantiated if not running in a
 	 * portlet container context
 	 */
 	private WicketFilterPortletContext filterPortletContext;
 
-	/*
+	/**
 	 * Flag if this filter may only process request from within a Portlet context.
 	 */
 	private boolean portletOnlyFilter;
@@ -180,8 +192,11 @@ public class WicketFilter implements Filter
 		{
 			FilterRequestContext filterRequestContext = new FilterRequestContext(
 				(HttpServletRequest)request, (HttpServletResponse)response);
+
+			// FIXME comment
 			inPortletContext = filterPortletContext.setupFilter(getFilterConfig(),
 				filterRequestContext, getFilterPath((HttpServletRequest)request));
+
 			httpServletRequest = filterRequestContext.getRequest();
 			httpServletResponse = filterRequestContext.getResponse();
 		}
@@ -191,7 +206,11 @@ public class WicketFilter implements Filter
 			httpServletResponse = (HttpServletResponse)response;
 		}
 
-		if (portletOnlyFilter && !inPortletContext)
+		// If we are a filter which is only meant to process requests in a portlet context, and we
+		// are in fact not in a portlet context, stop processing now and pass to next filter in the
+		// chain.
+		boolean passToNextFilter = portletOnlyFilter && !inPortletContext;
+		if (passToNextFilter)
 		{
 			chain.doFilter(request, response);
 			return;
@@ -615,10 +634,12 @@ public class WicketFilter implements Filter
 			portletOnlyFilter = Boolean.valueOf(filterConfig.getInitParameter(PORTLET_ONLY_FILTER))
 				.booleanValue();
 
+			// sets up Portlet context if this application is deployed as a portlet
 			if (isPortletContextAvailable(filterConfig))
 			{
 				filterPortletContext = newWicketFilterPortletContext();
 			}
+			// if WicketFilterPortletContext instantiation succeeded, initialise it
 			if (filterPortletContext != null)
 			{
 				filterPortletContext.initFilter(webApplication);
@@ -656,10 +677,23 @@ public class WicketFilter implements Filter
 		}
 	}
 
+	/**
+	 * Tries to find if a PortletContext is available. Searches for the 'detect portlet context'
+	 * flag in various places and if true, tries to load the {@link javax.portlet.PortletContext}.
+	 * 
+	 * @param config
+	 *            the FilterConfig object
+	 * @return true if {@link javax.portlet.PortletContext} was successfully loaded
+	 * @throws ServletException
+	 *             on IO errors
+	 */
 	protected boolean isPortletContextAvailable(FilterConfig config) throws ServletException
 	{
 		boolean detectPortletContext = false;
+
+		// search for portlet detection boolean in various places
 		String parameter = config.getInitParameter(DETECT_PORTLET_CONTEXT);
+		// search filter parameter
 		if (parameter != null)
 		{
 			detectPortletContext = Boolean.valueOf(parameter).booleanValue();
@@ -668,6 +702,7 @@ public class WicketFilter implements Filter
 		{
 			parameter = config.getServletContext().getInitParameter(
 				DETECT_PORTLET_CONTEXT_FULL_NAME);
+			// search web.xml context paramter
 			if (parameter != null)
 			{
 				detectPortletContext = Boolean.valueOf(parameter).booleanValue();
@@ -677,6 +712,7 @@ public class WicketFilter implements Filter
 				InputStream is = Thread.currentThread()
 					.getContextClassLoader()
 					.getResourceAsStream(WICKET_PORTLET_PROPERTIES);
+				// search wicket.properties
 				if (is != null)
 				{
 					try
@@ -697,6 +733,7 @@ public class WicketFilter implements Filter
 		}
 		if (detectPortletContext)
 		{
+			// load the portlet context
 			try
 			{
 				Class<?> portletClass = Class.forName("javax.portlet.PortletContext");

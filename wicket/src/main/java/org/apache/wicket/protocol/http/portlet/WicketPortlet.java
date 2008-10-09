@@ -52,17 +52,30 @@ public class WicketPortlet extends GenericPortlet
 
 	public static final String WICKET_URL_PORTLET_PARAMETER = "_wu";
 	public static final String WICKET_FILTER_PATH_PARAM = "wicketFilterPath";
+
+	/** Portal Action request */
 	public static final String ACTION_REQUEST = "ACTION";
-	public static final String VIEW_REQUEST = "VIEW";
+	/** Portal Resource request */
 	public static final String RESOURCE_REQUEST = "RESOURCE";
 	public static final String EVENT_REQUEST = "EVENT";
+
+	/** Portal Custom request */
 	public static final String CUSTOM_REQUEST = "CUSTOM";
+	/** Portal View request - i.e. doView */
+	public static final String VIEW_REQUEST = "VIEW";
+	/** Portal Edit request - i.e. doEdit */
 	public static final String EDIT_REQUEST = "EDIT";
+	/** Portal Help request - i.e. doHelp */
 	public static final String HELP_REQUEST = "HELP";
+	/**
+	 * Marker used as key to store the type of request as a request attribute - i.e. resource /
+	 * action / event request etc .
+	 */
 	public static final String REQUEST_TYPE_ATTR = WicketPortlet.class.getName() + ".REQUEST_TYPE";
 	public static final String WICKET_URL_PORTLET_PARAMETER_ATTR = WicketPortlet.class.getName() +
 		".WICKET_URL_PORTLET_PARAMETER";
 	public static final String CONFIG_PARAM_PREFIX = WicketPortlet.class.getName() + ".";
+	/** Marker used as key for the WicketResponseState object stored as a request attribute. */
 	public static final String RESPONSE_STATE_ATTR = WicketResponseState.class.getName();
 	public static final String WICKET_PORTLET_PROPERTIES = WicketPortlet.class.getName().replace(
 		'.', '/') +
@@ -262,7 +275,6 @@ public class WicketPortlet extends GenericPortlet
 		return properties;
 	}
 
-
 	protected String getWicketConfigParameter(PortletRequest request, String paramName,
 		String defaultValue)
 	{
@@ -355,6 +367,17 @@ public class WicketPortlet extends GenericPortlet
 		processRequest(request, response, RESOURCE_REQUEST, PARAM_VIEW_PAGE);
 	}
 
+	/**
+	 * Consumes and processes all portlet requests. All the doX methods delegate to this method,
+	 * including processAction and serveResource.
+	 * 
+	 * @param request
+	 * @param response
+	 * @param requestType
+	 * @param pageType
+	 * @throws PortletException
+	 * @throws IOException
+	 */
 	protected void processRequest(PortletRequest request, PortletResponse response,
 		String requestType, String pageType) throws PortletException, IOException
 	{

@@ -34,17 +34,27 @@ import org.apache.wicket.WicketRuntimeException;
 import org.apache.wicket.protocol.http.WebApplication;
 import org.apache.wicket.protocol.http.WebRequest;
 import org.apache.wicket.protocol.http.WebResponse;
+import org.apache.wicket.protocol.http.WicketFilter;
 import org.apache.wicket.protocol.http.servlet.ServletWebRequest;
 import org.apache.wicket.settings.IRequestCycleSettings;
 
 /**
+ * Handles Portlet specific filtering requirements.
+ * 
+ * @see WicketFilter
  * @author Ate Douma
  */
 public class WicketFilterPortletContext
 {
 	private static final String SERVLET_RESOURCE_URL_PORTLET_WINDOW_ID_PREFIX = "/ps:";
 
-	public void initFilter(WebApplication webApplication)
+	/**
+	 * Overrides render strategy and adds the {@link PortletInvalidMarkupFilter} filter.
+	 * 
+	 * @see PortletInvalidMarkupFilter
+	 * @param webApplication
+	 */
+	public void initFilter(WebApplication webApplication) throws ServletException
 	{
 		// override render strategy to REDIRECT_TO_REDNER
 		webApplication.getRequestCycleSettings().setRenderStrategy(
@@ -55,6 +65,18 @@ public class WicketFilterPortletContext
 			.addResponseFilter(new PortletInvalidMarkupFilter());
 	}
 
+	/**
+	 * Sets up the filter to process a given request cycle. Potentially wraps the request and
+	 * response objects with portlet specific wrappers.
+	 * 
+	 * @param config
+	 *            filter configuration
+	 * @param filterRequestContext
+	 * @param filterPath
+	 * @return true if we are in a portlet environment
+	 * @throws IOException
+	 * @throws ServletException
+	 */
 	public boolean setupFilter(FilterConfig config, FilterRequestContext filterRequestContext,
 		String filterPath) throws IOException, ServletException
 	{
