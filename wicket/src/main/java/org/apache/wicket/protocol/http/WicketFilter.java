@@ -621,7 +621,7 @@ public class WicketFilter implements Filter
 			}
 			if (filterPortletContext != null)
 			{
-				filterPortletContext.initFilter(filterConfig, webApplication);
+				filterPortletContext.initFilter(webApplication);
 			}
 		}
 		finally

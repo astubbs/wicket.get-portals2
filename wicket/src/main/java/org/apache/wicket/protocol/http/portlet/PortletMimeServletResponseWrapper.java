@@ -24,6 +24,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.wicket.RequestContext;
 
+/**
+ * Super class providing common Portlet response functions for different response types.
+ * 
+ * @author Thijs Vonk
+ */
 public class PortletMimeServletResponseWrapper extends PortletServletResponseWrapper
 {
 	MimeResponse mimeResponse;

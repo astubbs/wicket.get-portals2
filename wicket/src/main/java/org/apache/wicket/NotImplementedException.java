@@ -14,22 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.wicket.protocol.http.portlet;
-
-import javax.portlet.ResourceResponse;
-import javax.servlet.http.HttpServletResponse;
+package org.apache.wicket;
 
 /**
- * Identifies resource serving portlet responses.
- * 
- * @author Thijs Vonk
+ * @see org.apache.commons.lang.NotImplementedException
+ * @author Antony Stubbs
  */
-public class PortletResourceServletResponseWrapper extends PortletMimeServletResponseWrapper
+public class NotImplementedException extends RuntimeException
 {
+	private static final long serialVersionUID = -3151548686425217123L;
 
-	public PortletResourceServletResponseWrapper(HttpServletResponse response,
-		ResourceResponse resourceResponse, WicketResponseState responseState)
+	public NotImplementedException()
 	{
-		super(response, resourceResponse, responseState);
+		super();
 	}
+
+	public NotImplementedException(String msg)
+	{
+		super(msg);
+	}
+
 }

@@ -39,6 +39,7 @@ import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
 import javax.portlet.ResourceURL;
 
+import org.apache.wicket.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -343,6 +344,7 @@ public class WicketPortlet extends GenericPortlet
 	{
 		// TODO implement?
 		LOG.debug("processEvent");
+		throw new NotImplementedException();
 	}
 
 	@Override
@@ -420,6 +422,9 @@ public class WicketPortlet extends GenericPortlet
 							}
 							System.out.println("sendRedirect");
 							// TODO fix this!!
+							// FIXME
+							LOG.warn("no-op - sendReriect not implemented");
+							throw new NotImplementedException("no-op - sendReriect not implemented");
 							// ((ResourceResponse)response).getHttpServletResponse(this, request,
 							// response).sendRedirect(redirectLocation);
 						}
@@ -473,6 +478,7 @@ public class WicketPortlet extends GenericPortlet
 		super.doHeaders(request, response);
 	}
 
+	@Override
 	public Map<String, String[]> getContainerRuntimeOptions()
 	{
 		LOG.debug("getContainerRuntimeOptions");

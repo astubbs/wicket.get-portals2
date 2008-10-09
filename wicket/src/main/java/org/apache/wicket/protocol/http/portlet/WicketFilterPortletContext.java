@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import javax.portlet.ActionResponse;
 import javax.portlet.PortletConfig;
+import javax.portlet.PortletResponse;
 import javax.portlet.RenderResponse;
 import javax.portlet.ResourceResponse;
 import javax.servlet.FilterConfig;
@@ -29,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.apache.portals.bridges.util.ServletPortletSessionProxy;
+import org.apache.wicket.WicketRuntimeException;
 import org.apache.wicket.protocol.http.WebApplication;
 import org.apache.wicket.protocol.http.WebRequest;
 import org.apache.wicket.protocol.http.WebResponse;
@@ -42,11 +44,13 @@ public class WicketFilterPortletContext
 {
 	private static final String SERVLET_RESOURCE_URL_PORTLET_WINDOW_ID_PREFIX = "/ps:";
 
-	public void initFilter(FilterConfig filterConfig, WebApplication webApplication)
-		throws ServletException
+	public void initFilter(WebApplication webApplication)
 	{
+		// override render strategy to REDIRECT_TO_REDNER
 		webApplication.getRequestCycleSettings().setRenderStrategy(
 			IRequestCycleSettings.REDIRECT_TO_RENDER);
+		// Add response filter to remove extra HTML such as <body> etc as they are not appropriate
+		// for portlet environments
 		webApplication.getRequestCycleSettings()
 			.addResponseFilter(new PortletInvalidMarkupFilter());
 	}
@@ -57,38 +61,55 @@ public class WicketFilterPortletContext
 		boolean inPortletContext = false;
 		PortletConfig portletConfig = (PortletConfig)filterRequestContext.getRequest()
 			.getAttribute("javax.portlet.config");
+		// if we are running in a portlet environment
 		if (portletConfig != null)
 		{
 			inPortletContext = true;
+			// get response state
 			WicketResponseState responseState = (WicketResponseState)filterRequestContext.getRequest()
 				.getAttribute(WicketPortlet.RESPONSE_STATE_ATTR);
+
+			// FIXME - decouple from Apache Bridges project - do we still need
+			// ServletPortletSessionProxy?
 			filterRequestContext.setRequest(new PortletServletRequestWrapper(
 				config.getServletContext(), filterRequestContext.getRequest(),
 				ServletPortletSessionProxy.createProxy(filterRequestContext.getRequest()),
 				filterPath));
-			if (WicketPortlet.ACTION_REQUEST.equals(filterRequestContext.getRequest().getAttribute(
-				WicketPortlet.REQUEST_TYPE_ATTR)))
+
+			// get the portlet response type
+			PortletResponse responseType = (PortletResponse)filterRequestContext.getRequest()
+				.getAttribute("javax.portlet.response");
+			// get the portlet request type
+			String requestType = (String)filterRequestContext.getRequest().getAttribute(
+				WicketPortlet.REQUEST_TYPE_ATTR);
+
+			// wrap request object in appropriate PortletServletResponseWrapper
+			PortletServletResponseWrapper response;
+			// Action request type
+			if (WicketPortlet.ACTION_REQUEST.equals(requestType))
 			{
-				filterRequestContext.setResponse(new PortletActionServletResponseWrapper(
-					filterRequestContext.getResponse(),
-					(ActionResponse)filterRequestContext.getRequest().getAttribute(
-						"javax.portlet.response"), responseState));
+				response = new PortletActionServletResponseWrapper(
+					filterRequestContext.getResponse(), (ActionResponse)responseType, responseState);
 			}
-			else if (WicketPortlet.RESOURCE_REQUEST.equals(filterRequestContext.getRequest()
-				.getAttribute(WicketPortlet.REQUEST_TYPE_ATTR)))
+			// Resource request type
+			else if (WicketPortlet.RESOURCE_REQUEST.equals(requestType))
 			{
-				filterRequestContext.setResponse(new PortletResourceServletResponseWrapper(
-					filterRequestContext.getResponse(),
-					(ResourceResponse)filterRequestContext.getRequest().getAttribute(
-						"javax.portlet.response"), responseState));
+				response = new PortletResourceServletResponseWrapper(
+					filterRequestContext.getResponse(), (ResourceResponse)responseType,
+					responseState);
+			}
+			// Event request type
+			else if (WicketPortlet.EVENT_REQUEST.equals(requestType))
+			{
+				response = new PortletRenderServletResponseWrapper(
+					filterRequestContext.getResponse(), (RenderResponse)responseType, responseState);
 			}
 			else
 			{
-				filterRequestContext.setResponse(new PortletRenderServletResponseWrapper(
-					filterRequestContext.getResponse(),
-					(RenderResponse)filterRequestContext.getRequest().getAttribute(
-						"javax.portlet.response"), responseState));
+				// FIXME appropriate to throw exception? What about render requests?
+				throw new WicketRuntimeException("Unsupported request type");
 			}
+			filterRequestContext.setResponse(response);
 		}
 		else
 		{
