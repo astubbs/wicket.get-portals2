@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.wicket.RequestContext;
 
 /**
+ * Identifies render portlet responses.
+ * 
  * @author Ate Douma
  */
 public class PortletRenderServletResponseWrapper extends PortletServletResponseWrapper
@@ -31,7 +33,7 @@ public class PortletRenderServletResponseWrapper extends PortletServletResponseW
 	RenderResponse renderResponse;
 
 	public PortletRenderServletResponseWrapper(HttpServletResponse response,
-			RenderResponse renderResponse, WicketResponseState responseState)
+		RenderResponse renderResponse, WicketResponseState responseState)
 	{
 		super(response, responseState);
 		this.renderResponse = renderResponse;
@@ -40,11 +42,13 @@ public class PortletRenderServletResponseWrapper extends PortletServletResponseW
 	/**
 	 * @see javax.servlet.ServletResponseWrapper#setContentType(java.lang.String)
 	 */
+	@Override
 	public void setContentType(String arg0)
 	{
 		renderResponse.setContentType(arg0);
 	}
 
+	@Override
 	public void sendRedirect(String redirectLocation) throws IOException
 	{
 		RequestContext rc = RequestContext.get();
@@ -58,7 +62,7 @@ public class PortletRenderServletResponseWrapper extends PortletServletResponseW
 			else
 			{
 				String contextPath = ((PortletRequestContext)rc).getPortletRequest()
-						.getContextPath();
+					.getContextPath();
 				if (redirectLocation.startsWith(contextPath + "/"))
 				{
 					redirectLocation = redirectLocation.substring(contextPath.length());
