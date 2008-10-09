@@ -16,15 +16,15 @@
  */
 package org.apache.wicket.protocol.http.portlet;
 
-import javax.portlet.RenderResponse;
+import javax.portlet.ResourceResponse;
 import javax.servlet.http.HttpServletResponse;
 
-public class PortletRenderServletResponseWrapper extends PortletMimeServletResponseWrapper
+public class PortletResourceServletResponseWrapper extends PortletMimeServletResponseWrapper
 {
-	public PortletRenderServletResponseWrapper(HttpServletResponse response,
-		RenderResponse renderResponse, WicketResponseState responseState)
-	{
-		super(response, renderResponse, responseState);
-	}
 
+	public PortletResourceServletResponseWrapper(HttpServletResponse response,
+		ResourceResponse resourceResponse, WicketResponseState responseState)
+	{
+		super(response, resourceResponse, responseState);
+	}
 }

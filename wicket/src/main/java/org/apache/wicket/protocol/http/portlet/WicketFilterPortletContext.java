@@ -18,8 +18,10 @@ package org.apache.wicket.protocol.http.portlet;
 
 import java.io.IOException;
 
+import javax.portlet.ActionResponse;
 import javax.portlet.PortletConfig;
 import javax.portlet.RenderResponse;
+import javax.portlet.ResourceResponse;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -41,41 +43,51 @@ public class WicketFilterPortletContext
 	private static final String SERVLET_RESOURCE_URL_PORTLET_WINDOW_ID_PREFIX = "/ps:";
 
 	public void initFilter(FilterConfig filterConfig, WebApplication webApplication)
-			throws ServletException
+		throws ServletException
 	{
 		webApplication.getRequestCycleSettings().setRenderStrategy(
-				IRequestCycleSettings.REDIRECT_TO_RENDER);
+			IRequestCycleSettings.REDIRECT_TO_RENDER);
 		webApplication.getRequestCycleSettings()
-				.addResponseFilter(new PortletInvalidMarkupFilter());
+			.addResponseFilter(new PortletInvalidMarkupFilter());
 	}
 
 	public boolean setupFilter(FilterConfig config, FilterRequestContext filterRequestContext,
-			String filterPath) throws IOException, ServletException
+		String filterPath) throws IOException, ServletException
 	{
 		boolean inPortletContext = false;
 		PortletConfig portletConfig = (PortletConfig)filterRequestContext.getRequest()
-				.getAttribute("javax.portlet.config");
+			.getAttribute("javax.portlet.config");
 		if (portletConfig != null)
 		{
 			inPortletContext = true;
-			WicketResponseState responseState = (WicketResponseState)filterRequestContext
-					.getRequest().getAttribute(WicketPortlet.RESPONSE_STATE_ATTR);
-			filterRequestContext.setRequest(new PortletServletRequestWrapper(config
-					.getServletContext(), filterRequestContext.getRequest(),
-					ServletPortletSessionProxy.createProxy(filterRequestContext.getRequest()),
-					filterPath));
+			WicketResponseState responseState = (WicketResponseState)filterRequestContext.getRequest()
+				.getAttribute(WicketPortlet.RESPONSE_STATE_ATTR);
+			filterRequestContext.setRequest(new PortletServletRequestWrapper(
+				config.getServletContext(), filterRequestContext.getRequest(),
+				ServletPortletSessionProxy.createProxy(filterRequestContext.getRequest()),
+				filterPath));
 			if (WicketPortlet.ACTION_REQUEST.equals(filterRequestContext.getRequest().getAttribute(
-					WicketPortlet.REQUEST_TYPE_ATTR)))
+				WicketPortlet.REQUEST_TYPE_ATTR)))
 			{
 				filterRequestContext.setResponse(new PortletActionServletResponseWrapper(
-						filterRequestContext.getResponse(), responseState));
+					filterRequestContext.getResponse(),
+					(ActionResponse)filterRequestContext.getRequest().getAttribute(
+						"javax.portlet.response"), responseState));
+			}
+			else if (WicketPortlet.RESOURCE_REQUEST.equals(filterRequestContext.getRequest()
+				.getAttribute(WicketPortlet.REQUEST_TYPE_ATTR)))
+			{
+				filterRequestContext.setResponse(new PortletResourceServletResponseWrapper(
+					filterRequestContext.getResponse(),
+					(ResourceResponse)filterRequestContext.getRequest().getAttribute(
+						"javax.portlet.response"), responseState));
 			}
 			else
 			{
-				filterRequestContext
-						.setResponse(new PortletRenderServletResponseWrapper(filterRequestContext
-								.getResponse(), (RenderResponse)filterRequestContext.getRequest()
-								.getAttribute("javax.portlet.response"), responseState));
+				filterRequestContext.setResponse(new PortletRenderServletResponseWrapper(
+					filterRequestContext.getResponse(),
+					(RenderResponse)filterRequestContext.getRequest().getAttribute(
+						"javax.portlet.response"), responseState));
 			}
 		}
 		else
@@ -83,15 +95,15 @@ public class WicketFilterPortletContext
 			ServletContext context = config.getServletContext();
 			HttpServletRequest request = filterRequestContext.getRequest();
 			String pathInfo = request.getRequestURI().substring(
-					request.getContextPath().length() + filterPath.length());
+				request.getContextPath().length() + filterPath.length());
 			String portletWindowId = decodePortletWindowId(pathInfo);
 			if (portletWindowId != null)
 			{
 				HttpSession proxiedSession = ServletPortletSessionProxy.createProxy(request,
-						portletWindowId);
+					portletWindowId);
 				pathInfo = stripWindowIdFromPathInfo(pathInfo);
 				filterRequestContext.setRequest(new PortletServletRequestWrapper(context, request,
-						proxiedSession, filterPath, pathInfo));
+					proxiedSession, filterPath, pathInfo));
 			}
 		}
 		return inPortletContext;
@@ -120,13 +132,12 @@ public class WicketFilterPortletContext
 			int nextPath = pathInfo.indexOf('/', 1);
 			if (nextPath > -1)
 			{
-				portletWindowId = pathInfo.substring(getServletResourceUrlPortletWindowIdPrefix()
-						.length(), nextPath);
+				portletWindowId = pathInfo.substring(
+					getServletResourceUrlPortletWindowIdPrefix().length(), nextPath);
 			}
 			else
 			{
-				portletWindowId = pathInfo.substring(getServletResourceUrlPortletWindowIdPrefix()
-						.length());
+				portletWindowId = pathInfo.substring(getServletResourceUrlPortletWindowIdPrefix().length());
 			}
 		}
 		return portletWindowId;

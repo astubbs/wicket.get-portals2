@@ -18,16 +18,14 @@ package org.apache.wicket.protocol.http.portlet;
 
 import java.util.HashMap;
 
+import javax.portlet.MimeResponse;
 import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletResponse;
 import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import javax.portlet.ResourceURL;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.portals.bridges.common.PortletResourceURLFactory;
 import org.apache.portals.bridges.util.PortletWindowUtils;
 import org.apache.wicket.RequestContext;
 import org.apache.wicket.RequestCycle;
@@ -48,37 +46,32 @@ public class PortletRequestContext extends RequestContext
 	private final PortletResponse portletResponse;
 	// needed for JSR-168 support which only allows PortletURLs to be created by RenderResponse,
 	// with JSR-286 PortletResponse can do that too
-	private final RenderResponse renderResponse;
-	private final PortletResourceURLFactory resourceURLFactory;
+	private final MimeResponse mimeResponse;
+// private final PortletResourceURLFactory resourceURLFactory;
 	private final IHeaderResponse headerResponse;
 	private String portletWindowId;
-	private String wicketUrlPortletParameter;
+	private final String wicketUrlPortletParameter;
 	private final boolean ajax;
 	private final boolean embedded;
 	private final boolean resourceRequest;
-	private String[] lastEncodedUrl = new String[2];
+	private final String[] lastEncodedUrl = new String[2];
 
 	public PortletRequestContext(WicketFilterPortletContext filterContext,
-			ServletWebRequest request, WebResponse response)
+		ServletWebRequest request, WebResponse response)
 	{
 		this.filterContext = filterContext;
 		HttpServletRequest servletRequest = request.getHttpServletRequest();
-		this.portletConfig = (PortletConfig)servletRequest.getAttribute("javax.portlet.config");
-		this.portletRequest = (PortletRequest)servletRequest.getAttribute("javax.portlet.request");
-		this.portletResponse = (PortletResponse)servletRequest
-				.getAttribute("javax.portlet.response");
-		this.renderResponse = (portletResponse instanceof RenderResponse)
-				? (RenderResponse)portletResponse
-				: null;
-		this.resourceURLFactory = (PortletResourceURLFactory)portletRequest
-				.getAttribute(WicketPortlet.RESOURCE_URL_FACTORY_ATTR);
-		this.wicketUrlPortletParameter = (String)portletRequest
-				.getAttribute(WicketPortlet.WICKET_URL_PORTLET_PARAMETER_ATTR);
-		this.ajax = request.isAjax();
-		this.resourceRequest = "true".equals(servletRequest
-				.getAttribute(WicketPortlet.PORTLET_RESOURCE_URL_ATTR));
-		this.embedded = !(ajax || resourceRequest);
-		this.headerResponse = embedded ? newPortletHeaderResponse(response) : null;
+		portletConfig = (PortletConfig)servletRequest.getAttribute("javax.portlet.config");
+		portletRequest = (PortletRequest)servletRequest.getAttribute("javax.portlet.request");
+		portletResponse = (PortletResponse)servletRequest.getAttribute("javax.portlet.response");
+		mimeResponse = (portletResponse instanceof MimeResponse) ? (MimeResponse)portletResponse
+			: null;
+		wicketUrlPortletParameter = (String)portletRequest.getAttribute(WicketPortlet.WICKET_URL_PORTLET_PARAMETER_ATTR);
+		ajax = request.isAjax();
+		resourceRequest = portletRequest.getAttribute(WicketPortlet.REQUEST_TYPE_ATTR).equals(
+			WicketPortlet.RESOURCE_REQUEST);
+		embedded = !(ajax || resourceRequest);
+		headerResponse = embedded ? newPortletHeaderResponse(response) : null;
 	}
 
 	protected IHeaderResponse newPortletHeaderResponse(Response response)
@@ -114,6 +107,7 @@ public class PortletRequestContext extends RequestContext
 	/**
 	 * @see org.apache.wicket.RequestContext#encodeActionURL(java.lang.CharSequence)
 	 */
+	@Override
 	public CharSequence encodeActionURL(CharSequence path)
 	{
 		return encodeActionURL(path, false);
@@ -128,9 +122,9 @@ public class PortletRequestContext extends RequestContext
 		if (path != null)
 		{
 			path = getQualifiedPath(path);
-			if (renderResponse != null)
+			if (mimeResponse != null)
 			{
-				PortletURL url = renderResponse.createActionURL();
+				PortletURL url = mimeResponse.createActionURL();
 				url.setParameter(wicketUrlPortletParameter, path.toString());
 				path = saveLastEncodedUrl(url.toString(), path.toString());
 			}
@@ -141,6 +135,7 @@ public class PortletRequestContext extends RequestContext
 	/**
 	 * @see org.apache.wicket.RequestContext#encodeMarkupId(java.lang.String)
 	 */
+	@Override
 	public String encodeMarkupId(String markupId)
 	{
 		if (markupId != null)
@@ -153,6 +148,7 @@ public class PortletRequestContext extends RequestContext
 	/**
 	 * @see org.apache.wicket.RequestContext#encodeRenderURL(java.lang.CharSequence)
 	 */
+	@Override
 	public CharSequence encodeRenderURL(CharSequence path)
 	{
 		return encodeRenderURL(path, false);
@@ -167,11 +163,11 @@ public class PortletRequestContext extends RequestContext
 		if (path != null)
 		{
 			path = getQualifiedPath(path);
-			if (renderResponse != null)
+			if (mimeResponse != null)
 			{
-				PortletURL url = renderResponse.createRenderURL();
+				PortletURL url = mimeResponse.createRenderURL();
 				url.setParameter(wicketUrlPortletParameter +
-						portletRequest.getPortletMode().toString(), path.toString());
+					portletRequest.getPortletMode().toString(), path.toString());
 				path = saveLastEncodedUrl(url.toString(), path.toString());
 			}
 		}
@@ -181,26 +177,25 @@ public class PortletRequestContext extends RequestContext
 	/**
 	 * @see org.apache.wicket.RequestContext#encodeResourceURL(java.lang.CharSequence)
 	 */
+	@Override
 	public CharSequence encodeResourceURL(CharSequence path)
 	{
 		if (path != null)
 		{
 			path = getQualifiedPath(path);
-			if (renderResponse != null)
+			if (mimeResponse != null)
 			{
 				try
 				{
 					HashMap parameters = new HashMap(2);
 					parameters.put(wicketUrlPortletParameter +
-							portletRequest.getPortletMode().toString(), new String[] { path
-							.toString() });
-					parameters.put(WicketPortlet.PORTLET_RESOURCE_URL_PARAMETER,
-							new String[] { "true" });
-					path = saveLastEncodedUrl(resourceURLFactory.createResourceURL(portletConfig,
-							(RenderRequest)portletRequest, renderResponse, parameters), path
-							.toString());
+						portletRequest.getPortletMode().toString(),
+						new String[] { path.toString() });
+					ResourceURL url = mimeResponse.createResourceURL();
+					url.setParameters(parameters);
+					path = saveLastEncodedUrl(url.toString(), path.toString());
 				}
-				catch (PortletException e)
+				catch (Exception e)
 				{
 					throw new RuntimeException(e);
 				}
@@ -212,6 +207,7 @@ public class PortletRequestContext extends RequestContext
 	/**
 	 * @see org.apache.wicket.RequestContext#encodeSharedResourceURL(java.lang.CharSequence)
 	 */
+	@Override
 	public CharSequence encodeSharedResourceURL(CharSequence path)
 	{
 		if (path != null)
@@ -225,6 +221,7 @@ public class PortletRequestContext extends RequestContext
 	/**
 	 * @see org.apache.wicket.RequestContext#getHeaderResponse()
 	 */
+	@Override
 	public IHeaderResponse getHeaderResponse()
 	{
 		return headerResponse;
@@ -233,14 +230,16 @@ public class PortletRequestContext extends RequestContext
 	/**
 	 * @see org.apache.wicket.RequestContext#getNamespace()
 	 */
+	@Override
 	public CharSequence getNamespace()
 	{
-		return renderResponse != null ? renderResponse.getNamespace() : "";
+		return portletResponse != null ? portletResponse.getNamespace() : "";
 	}
 
 	/**
 	 * @see org.apache.wicket.RequestContext#isPortletRequest()
 	 */
+	@Override
 	public boolean isPortletRequest()
 	{
 		return true;
@@ -253,8 +252,7 @@ public class PortletRequestContext extends RequestContext
 
 	protected String getQualifiedPath(CharSequence path)
 	{
-		HttpServletRequest request = ((WebRequest)RequestCycle.get().getRequest())
-				.getHttpServletRequest();
+		HttpServletRequest request = ((WebRequest)RequestCycle.get().getRequest()).getHttpServletRequest();
 		return request.getServletPath() + "/" + path;
 	}
 
@@ -262,8 +260,7 @@ public class PortletRequestContext extends RequestContext
 	{
 		if (portletWindowId == null)
 		{
-			portletWindowId = PortletWindowUtils.getPortletWindowId(portletRequest
-					.getPortletSession());
+			portletWindowId = PortletWindowUtils.getPortletWindowId(portletRequest.getPortletSession());
 		}
 		return portletWindowId;
 	}

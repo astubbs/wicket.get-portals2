@@ -16,6 +16,8 @@
  */
 package org.apache.wicket.protocol.http.portlet;
 
+import java.io.UnsupportedEncodingException;
+
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
@@ -27,7 +29,7 @@ import javax.servlet.http.HttpSession;
 public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 {
 	private String contextPath;
-	private String servletPath;
+	private final String servletPath;
 	private String pathInfo;
 	private String requestURI;
 	private String queryString;
@@ -36,7 +38,7 @@ public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 	private static String decodePathInfo(HttpServletRequest request, String filterPath)
 	{
 		String pathInfo = request.getRequestURI().substring(
-				request.getContextPath().length() + filterPath.length());
+			request.getContextPath().length() + filterPath.length());
 		return pathInfo == null || pathInfo.length() < 2 ? null : pathInfo;
 	}
 
@@ -46,99 +48,115 @@ public class PortletServletRequestWrapper extends HttpServletRequestWrapper
 	}
 
 	protected PortletServletRequestWrapper(ServletContext context, HttpSession proxiedSession,
-			HttpServletRequest request, String filterPath)
+		HttpServletRequest request, String filterPath)
 	{
 		super(request);
-		this.session = proxiedSession;
+		session = proxiedSession;
 		if (proxiedSession == null)
 		{
-			this.session = request.getSession(false);
+			session = request.getSession(false);
 		}
-		this.servletPath = makeServletPath(filterPath);
-		if ((this.contextPath = (String)request.getAttribute("javax.servlet.include.context_path")) != null)
+		servletPath = makeServletPath(filterPath);
+		if ((contextPath = (String)request.getAttribute("javax.servlet.include.context_path")) != null)
 		{
-			this.requestURI = (String)request.getAttribute("javax.servlet.include.request_uri");
-			this.queryString = (String)request.getAttribute("javax.servlet.include.query_string");
+			requestURI = (String)request.getAttribute("javax.servlet.include.request_uri");
+			queryString = (String)request.getAttribute("javax.servlet.include.query_string");
 		}
-		else if ((this.contextPath = (String)request
-				.getAttribute("javax.servlet.forward.context_path")) != null)
+		else if ((contextPath = (String)request.getAttribute("javax.servlet.forward.context_path")) != null)
 		{
-			this.requestURI = (String)request.getAttribute("javax.servlet.forward.request_uri");
-			this.queryString = (String)request.getAttribute("javax.servlet.forward.query_string");
+			requestURI = (String)request.getAttribute("javax.servlet.forward.request_uri");
+			queryString = (String)request.getAttribute("javax.servlet.forward.query_string");
 		}
 		else
 		{
-			this.contextPath = request.getContextPath();
-			this.requestURI = request.getRequestURI();
-			this.queryString = request.getQueryString();
+			contextPath = request.getContextPath();
+			requestURI = request.getRequestURI();
+			queryString = request.getQueryString();
 		}
 	}
 
 	public PortletServletRequestWrapper(ServletContext context, HttpServletRequest request,
-			HttpSession proxiedSession, String filterPath)
+		HttpSession proxiedSession, String filterPath)
 	{
 		this(context, proxiedSession, request, filterPath);
 
-		String pathInfo = this.requestURI
-				.substring(this.contextPath.length() + filterPath.length());
+		String pathInfo = requestURI.substring(contextPath.length() + filterPath.length());
 		this.pathInfo = pathInfo == null || pathInfo.length() < 2 ? null : pathInfo;
 	}
 
 	public PortletServletRequestWrapper(ServletContext context, HttpServletRequest request,
-			HttpSession proxiedSession, String filterPath, String pathInfo)
+		HttpSession proxiedSession, String filterPath, String pathInfo)
 	{
 		this(context, proxiedSession, request, filterPath);
 
 		this.pathInfo = pathInfo;
 		// override requestURI
-		this.requestURI = this.contextPath + this.servletPath + (pathInfo != null ? pathInfo : "");
+		requestURI = contextPath + servletPath + (pathInfo != null ? pathInfo : "");
 	}
 
+	@Override
 	public String getContextPath()
 	{
 		return contextPath;
 	}
 
+	@Override
 	public String getServletPath()
 	{
 		return servletPath;
 	}
 
+	@Override
 	public String getPathInfo()
 	{
 		return pathInfo;
 	}
 
+	@Override
 	public String getRequestURI()
 	{
 		return requestURI;
 	}
 
+	@Override
 	public String getQueryString()
 	{
 		return queryString;
 	}
 
+	@Override
 	public HttpSession getSession()
 	{
 		return getSession(true);
 	}
 
+	@Override
 	public HttpSession getSession(boolean create)
 	{
 		return session != null ? session : super.getSession(create);
 	}
 
+
+	@Override
+	public void setCharacterEncoding(String enc) throws UnsupportedEncodingException
+	{
+		// TODO check different lifecycles? Only allow in ACTION and RESOURCE requests?
+		// see PLT.19.3.6
+	}
+
+	@Override
 	public Object getAttribute(String name)
 	{
 		// TODO: check if these can possibly be set/handled
 		// nullifying these for now to prevent Wicket
 		// ServletWebRequest.getRelativePathPrefixToWicketHandler() going the wrong route
 		if ("javax.servlet.error.request_uri".equals(name) ||
-				"javax.servlet.forward.servlet_path".equals(name))
+			"javax.servlet.forward.servlet_path".equals(name))
 		{
 			return null;
 		}
 		return super.getAttribute(name);
 	}
+
+
 }

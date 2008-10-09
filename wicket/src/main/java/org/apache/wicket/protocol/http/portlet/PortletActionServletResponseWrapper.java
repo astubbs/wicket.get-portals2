@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Locale;
 
+import javax.portlet.ActionResponse;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -30,70 +31,91 @@ import javax.servlet.http.HttpServletResponse;
 public class PortletActionServletResponseWrapper extends PortletServletResponseWrapper
 {
 
+	ActionResponse actionResponse;
+
 	public PortletActionServletResponseWrapper(HttpServletResponse response,
-			WicketResponseState responseState)
+		ActionResponse actionResponse, WicketResponseState responseState)
 	{
 		super(response, responseState);
+		this.actionResponse = actionResponse;  
 	}
 
+	@Override
 	public void addCookie(Cookie cookie)
 	{
+		actionResponse.addProperty(cookie);
 	}
 
+	@Override
 	public void addDateHeader(String s, long l)
 	{
+		actionResponse.addProperty(s, String.valueOf(l));
 	}
 
+	@Override
 	public void addHeader(String s, String s1)
 	{
+		actionResponse.addProperty(s, s1);
 	}
 
+	@Override
 	public void addIntHeader(String s, int i)
 	{
+		actionResponse.addProperty(s, String.valueOf(i));
 	}
 
+	@Override
 	public String encodeUrl(String s)
 	{
 		return s;
 	}
 
+	@Override
 	public String encodeURL(String s)
 	{
 		return s;
 	}
 
+	@Override
 	public void flushBuffer() throws IOException
 	{
 	}
 
+	@Override
 	public int getBufferSize()
 	{
 		return 0;
 	}
 
+	@Override
 	public ServletOutputStream getOutputStream() throws IOException
 	{
 		return null;
 	}
 
+	@Override
 	public PrintWriter getWriter() throws IOException
 	{
 		return null;
 	}
 
+	@Override
 	public boolean isCommitted()
 	{
 		return false;
 	}
 
+	@Override
 	public void reset()
 	{
 	}
 
+	@Override
 	public void resetBuffer()
 	{
 	}
 
+	@Override
 	public void setBufferSize(int i)
 	{
 	}
@@ -102,26 +124,35 @@ public class PortletActionServletResponseWrapper extends PortletServletResponseW
 	{
 	}
 
+	@Override
 	public void setContentLength(int i)
 	{
 	}
 
+	@Override
 	public void setContentType(String s)
 	{
 	}
 
+	@Override
 	public void setDateHeader(String s, long l)
 	{
+		actionResponse.setProperty(s, String.valueOf(l));
 	}
 
+	@Override
 	public void setHeader(String s, String s1)
 	{
+		actionResponse.setProperty(s, s1);
 	}
 
+	@Override
 	public void setIntHeader(String s, int i)
 	{
+		actionResponse.setProperty(s, String.valueOf(i));
 	}
 
+	@Override
 	public void setLocale(Locale locale)
 	{
 	}
